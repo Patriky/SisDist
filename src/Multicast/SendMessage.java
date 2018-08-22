@@ -9,7 +9,7 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SendMessage extends Thread {
+public class SendMessage {
     private MulticastSocket socket;
     private InetAddress group;
 
