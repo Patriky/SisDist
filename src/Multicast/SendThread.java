@@ -9,16 +9,17 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SendMessage {
+public class SendThread extends Thread{
     private MulticastSocket socket;
     private InetAddress group;
 
-    public SendMessage(MulticastSocket s, InetAddress g){
+    public SendThread(MulticastSocket s, InetAddress g){
         socket = s;
         group = g;
     }
 
-    public void Send (){
+    @Override
+    public void run (){
         try {
             System.out.println("Send: ");
             Scanner scan = new Scanner(System.in);
@@ -35,7 +36,7 @@ public class SendMessage {
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch(IOException e){
-            Logger.getLogger(SendMessage.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(SendThread.class.getName()).log(Level.SEVERE, null, e);
         } finally {
             if (socket != null) socket.close();
         }

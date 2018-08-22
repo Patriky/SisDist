@@ -2,8 +2,8 @@ package Multicast;
 
 import java.security.KeyPair;
 
-public class UnicastPeer {
+public class Peer {
     private KeyPair prKey;
-    private KeyPair pbKey;
+    public KeyPair pbKey;
 
 }
