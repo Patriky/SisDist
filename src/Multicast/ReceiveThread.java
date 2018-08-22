@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
 import java.net.SocketException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 public class ReceiveThread extends Thread {
     private MulticastSocket socket;
@@ -21,7 +23,6 @@ public class ReceiveThread extends Thread {
                 socket.receive(messageIn);
                 String message = new String(messageIn.getData());
                 System.out.println("Received:" + message);
-                System.out.println("Send: ");
             }
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());

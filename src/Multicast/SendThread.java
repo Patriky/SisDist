@@ -5,6 +5,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,27 +14,20 @@ import java.util.logging.Logger;
 public class SendThread extends Thread{
     private MulticastSocket socket;
     private InetAddress group;
+    String pbK;
 
-    public SendThread(MulticastSocket s, InetAddress g){
+    public SendThread(MulticastSocket s, InetAddress g, String publicK){
         socket = s;
         group = g;
+        pbK = publicK;
     }
 
     @Override
     public void run (){
         try {
-            System.out.println("Send: ");
-            Scanner scan = new Scanner(System.in);
-            while (true){
-                String arg = scan.nextLine();
-                if (arg.equals("quit")) {
-                    socket.leaveGroup(group);
-                    break;
-                }
-                byte[] argB = arg.getBytes();
-                DatagramPacket messageOut = new DatagramPacket(argB, arg.length(), group, 6789);
-                socket.send(messageOut);
-            }
+            byte[] pubB = pbK.getBytes();
+            DatagramPacket messageOut = new DatagramPacket(pubB, pbK.length(), group, 6789);
+            socket.send(messageOut);
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch(IOException e){
