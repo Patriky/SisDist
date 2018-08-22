@@ -12,10 +12,10 @@ public class MainClass {
             socket = new MulticastSocket(6789);
             socket.joinGroup(group);
 
-            ReceiveThread receiveThread = new ReceiveThread(socket);
+            ReceiveThread receiveMessage = new ReceiveThread(socket);
             SendThread sendMessage = new SendThread(socket, group);
 
-            receiveThread.start();
+            receiveMessage.start();
             sendMessage.start();
         } catch (IOException e) {
             e.printStackTrace();
