@@ -9,6 +9,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,7 +20,10 @@ public class MainProcess implements Runnable{
     private PrivateKey pvK;
     public PublicKey pbK;
 
-    public MainProcess () {
+ //   public MainProcess () {
+//    }
+
+    private void createSocket () {
         // ips for multicasting: 224.0.0.0 - 239.255.225.255
         socket = null;
         try {
@@ -34,10 +38,12 @@ public class MainProcess implements Runnable{
     }
 
     private void createKeys() {
+        KeyPairGenerator keyPairGenerator = null;
+        KeyPair pair = null;
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(1024);
-            KeyPair pair = keyPairGenerator.generateKeyPair();
+            pair = keyPairGenerator.generateKeyPair();
             pvK = pair.getPrivate();
             pbK = pair.getPublic();
         } catch (NoSuchAlgorithmException e) {
@@ -47,39 +53,49 @@ public class MainProcess implements Runnable{
         }
     }
 
-    public String getPublicKey () {
-        return pbK.toString();
+    public void receiveAll () {
+        ReceiveThread receiveMessage = new ReceiveThread(socket);
+        receiveMessage.start();
     }
 
-    @Override
-    public void run() {
-        createKeys();
-        ReceiveThread receiveMessage = new ReceiveThread(socket);
-        SendThread sendMessage = new SendThread(socket, group, getPublicKey());
-
-        receiveMessage.start();
+    public void sendPubKeys () {
+        String publicKey = pbK.toString();
+        SendThread sendMessage = new SendThread(socket, group, publicKey);
         sendMessage.start();
+    }
 
-        System.out.println("Send: ");
+    public void sendRequestMessage () {
+        Scanner scan = new Scanner(System.in);
+        String arg;
         try {
-            Scanner scan = new Scanner(System.in);
             while (true) {
-                String arg = scan.nextLine();
+                arg = scan.nextLine();
                 if (arg.equals("quit")) {
                     socket.leaveGroup(group);
                     break;
                 }
-
-                SendThread sendThread = new SendThread(socket, group, getPublicKey());
+                else if (arg.equals("send public key")) {
+                    sendPubKeys();
+                }
+                SendThread sendThread = new SendThread(socket, group, arg);
                 sendThread.start();
             }
         } catch (SocketException e) {
-            System.out.println("Socket: " + e.getMessage());
+            System.out.println("Socket: " + e.getMessage() + " at MainProcess");
         } catch(IOException e){
             Logger.getLogger(SendThread.class.getName()).log(Level.SEVERE, null, e);
         } finally {
             if (socket != null) socket.close();
         }
+    }
+
+    @Override
+    public void run() {
+        createSocket();
+        createKeys();
+        receiveAll();
+        sendPubKeys();
+        sendRequestMessage();
     }
 }
 

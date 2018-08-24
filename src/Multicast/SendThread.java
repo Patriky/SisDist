@@ -5,35 +5,29 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SendThread extends Thread{
     private MulticastSocket socket;
     private InetAddress group;
-    String pbK;
+    String message;
 
-    public SendThread(MulticastSocket s, InetAddress g, String publicK){
+    public SendThread(MulticastSocket s, InetAddress g, String m){
         socket = s;
         group = g;
-        pbK = publicK;
+        message = m;
     }
 
     @Override
     public void run (){
         try {
-            byte[] pubB = pbK.getBytes();
-            DatagramPacket messageOut = new DatagramPacket(pubB, pbK.length(), group, 6789);
+            byte[] mBytes = message.getBytes();
+            DatagramPacket messageOut = new DatagramPacket(mBytes, message.length(), group, 6789);
             socket.send(messageOut);
-        } catch (SocketException e) {
-            System.out.println("Socket: " + e.getMessage());
-        } catch(IOException e){
-            Logger.getLogger(SendThread.class.getName()).log(Level.SEVERE, null, e);
-        } finally {
-            if (socket != null) socket.close();
+        } catch (IOException e) {
+            System.out.println("IO: " + e.getMessage() + " at SendThread");
+            System.exit(1);
         }
     }
 }
