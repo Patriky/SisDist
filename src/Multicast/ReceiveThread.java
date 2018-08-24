@@ -17,9 +17,14 @@ public class ReceiveThread extends Thread {
         socket = s;
     }
 
-    public String getMessage () { return message; }
-
-    public ArrayList <String> getPbKList () { return pbKList; }
+    protected void listingKeys () {
+        System.out.println("Listing all the keys: ");
+        int count = 0;
+        for (String key : pbKList) {
+            count++;
+            System.out.println(count + ": " + key);
+        }
+    }
 
     @Override
     public void run (){
@@ -30,12 +35,15 @@ public class ReceiveThread extends Thread {
                 socket.receive(messageIn);
                 message = new String(messageIn.getData());
                 System.out.println("Received:" + message);
-                if(message.contains("Sun RSA public key")) {
+                if (message.contains("Sun RSA public key") && !pbKList.contains(message)) {
                     pbKList.add(message);
                     System.out.println("Key Keeped!");
                 }
-                else if(message.contains("request public keys")) {
+                else if (message.contains("public keys?")) {
                     System.out.println("Key To Send!");
+                }
+                else if (message.contains("list keys")) {
+                    listingKeys();
                 }
             }
         }  catch (IOException e) {
