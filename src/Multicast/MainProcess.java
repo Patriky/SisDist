@@ -20,8 +20,10 @@ public class MainProcess implements Runnable{
     private PrivateKey pvK;
     public PublicKey pbK;
 
- //   public MainProcess () {
-//    }
+    public MainProcess () {
+        createSocket();
+        createKeys();
+    }
 
     private void createSocket () {
         // ips for multicasting: 224.0.0.0 - 239.255.225.255
@@ -91,8 +93,6 @@ public class MainProcess implements Runnable{
 
     @Override
     public void run() {
-        createSocket();
-        createKeys();
         receiveAll();
         sendPubKeys();
         sendRequestMessage();
