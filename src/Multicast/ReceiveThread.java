@@ -10,15 +10,17 @@ import java.util.ArrayList;
 
 public class ReceiveThread extends Thread {
     private MulticastSocket socket;
+    private MainProcess mainProcess;
     public ArrayList <String> pbKList = new ArrayList<>();
     public String message;
 
-    public ReceiveThread(MulticastSocket s){
+    public ReceiveThread(MulticastSocket s, MainProcess mp){
         socket = s;
+        mainProcess = mp;
     }
 
     protected void listingKeys () {
-        System.out.println("Listing all the keys: ");
+        System.out.println("Listing all the public keys: ");
         int count = 0;
         for (String key : pbKList) {
             count++;
@@ -34,15 +36,13 @@ public class ReceiveThread extends Thread {
                 DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
                 socket.receive(messageIn);
                 message = new String(messageIn.getData());
-                System.out.println("Received:" + message);
+
                 if (message.contains("Sun RSA public key") && !pbKList.contains(message)) {
                     pbKList.add(message);
-                    System.out.println("Key Keeped!");
+                    mainProcess.sendPubKeys();
+                    System.out.println("public key sent!");
                 }
-                else if (message.contains("public keys?")) {
-                    System.out.println("Key To Send!");
-                }
-                else if (message.contains("list keys")) {
+                else if (message.contains("list")) {
                     listingKeys();
                 }
             }

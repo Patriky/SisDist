@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 public class SendThread extends Thread{
     private MulticastSocket socket;
     private InetAddress group;
-    String message;
+    public String message;
 
     public SendThread(MulticastSocket s, InetAddress g, String m){
         socket = s;

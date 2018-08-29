@@ -56,7 +56,7 @@ public class MainProcess implements Runnable{
     }
 
     public void receiveAll () {
-        ReceiveThread receiveMessage = new ReceiveThread(socket);
+        ReceiveThread receiveMessage = new ReceiveThread(socket, this);
         receiveMessage.start();
     }
 
@@ -76,9 +76,6 @@ public class MainProcess implements Runnable{
                     socket.leaveGroup(group);
                     break;
                 }
-                else if (arg.equals("send public key")) {
-                    sendPubKeys();
-                }
                 SendThread sendThread = new SendThread(socket, group, arg);
                 sendThread.start();
             }
@@ -93,8 +90,8 @@ public class MainProcess implements Runnable{
 
     @Override
     public void run() {
-        receiveAll();
         sendPubKeys();
+        receiveAll();
         sendRequestMessage();
     }
 }
