@@ -3,9 +3,6 @@ package Multicast;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
-import java.net.SocketException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.ArrayList;
 
 public class ReceiveThread extends Thread {
@@ -13,6 +10,7 @@ public class ReceiveThread extends Thread {
     private MainProcess mainProcess;
     public ArrayList <String> pbKList = new ArrayList<>();
     public String message;
+    public String publicKey;
 
     public ReceiveThread(MulticastSocket s, MainProcess mp){
         socket = s;
@@ -39,11 +37,17 @@ public class ReceiveThread extends Thread {
 
                 if (message.contains("Sun RSA public key") && !pbKList.contains(message)) {
                     pbKList.add(message);
+                    publicKey = message;
                     mainProcess.sendPubKeys();
-                    System.out.println("public key sent!");
                 }
                 else if (message.contains("list")) {
                     listingKeys();
+                }
+                else if (message.contains("The peer:")) {
+                    System.out.println(message);
+                    if (message.contains(" has left.")){
+                        pbKList.remove(publicKey);
+                    }
                 }
             }
         }  catch (IOException e) {
