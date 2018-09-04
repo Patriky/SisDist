@@ -23,19 +23,11 @@ public class MainProcess implements Runnable {
 
     public MainProcess () {
         createSocket();
-        setName();
         createKeys();
+        setName();
         String notification = "The peer: " + getName() + " has joined.";
         sendMessage(notification);
     }
-
-    public void setName () {
-        Scanner s = new Scanner(System.in);
-        System.out.print("Insert peer's name: ");
-        name = s.nextLine();
-    }
-
-    public String getName () { return name; }
 
     private void createSocket () {
         // ips for multicasting: 224.0.0.0 - 239.255.225.255
@@ -54,8 +46,8 @@ public class MainProcess implements Runnable {
     }
 
     private void createKeys() {
-        KeyPairGenerator keyPairGenerator = null;
-        KeyPair pair = null;
+        KeyPairGenerator keyPairGenerator;
+        KeyPair pair;
         try {
             keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(1024);
@@ -69,19 +61,56 @@ public class MainProcess implements Runnable {
         }
     }
 
-    public void receiveAll () {
-        ReceiveThread receiveMessage = new ReceiveThread(socket, this);
-        receiveMessage.start();
+    public void setName () {
+        Scanner s = new Scanner(System.in);
+        System.out.print("Insert peer's name: ");
+        name = s.nextLine();
     }
+
+    public String getName () { return name; }
 
     public void sendMessage(String m) {
         SendThread sendM = new SendThread(socket, group, m);
         sendM.start();
     }
 
+    @Override
+    public void run() {
+        sendPubKeys();
+        receiveAll();
+        sendRequestMessage();
+    }
+
     public void sendPubKeys () {
         String publicKey = pbK.toString();
         sendMessage(publicKey);
+    }
+
+    public void receiveAll () {
+        ReceiveThread receiveMessage = new ReceiveThread(socket, this);
+        receiveMessage.start();
+    }
+
+    public void sendRequestMessage () {
+        Scanner scan = new Scanner(System.in);
+        String arg, notification;
+        while (true) {
+            arg = scan.nextLine();
+            if (arg.equals("quit") || arg.equals("exit")) {
+                notification = "The peer: " + getName() + " has left.";
+                sendMessage(notification);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                leaveSocket();
+                break;
+            }
+            else {
+                sendMessage(arg);
+            }
+        }
     }
 
     public void leaveSocket () {
@@ -94,33 +123,6 @@ public class MainProcess implements Runnable {
         } finally {
             if (socket != null) socket.close();
         }
-    }
-
-    public void sendRequestMessage () {
-        Scanner scan = new Scanner(System.in);
-        String arg;
-        while (true) {
-            arg = scan.nextLine();
-            if (arg.equals("quit")) {
-                String notification = "The peer: " + getName() + " has left.";
-                sendMessage(notification);
-                try {
-                    TimeUnit.MILLISECONDS.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                leaveSocket();
-                break;
-            }
-            sendMessage(arg);
-        }
-    }
-
-    @Override
-    public void run() {
-        sendPubKeys();
-        receiveAll();
-        sendRequestMessage();
     }
 }
 

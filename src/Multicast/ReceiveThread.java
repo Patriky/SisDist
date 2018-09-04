@@ -45,7 +45,7 @@ public class ReceiveThread extends Thread {
                 }
                 else if (message.contains("The peer:")) {
                     System.out.println(message);
-                    if (message.contains(" has left.")){
+                    if (message.contains("has left.")){
                         pbKList.remove(publicKey);
                     }
                 }
