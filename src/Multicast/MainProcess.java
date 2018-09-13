@@ -3,39 +3,23 @@ package Multicast;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.SocketException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MainProcess implements Runnable {
-    private String name;
-    protected MulticastSocket socket;
-    protected InetAddress group;
-    private PrivateKey pvK;
-    public PublicKey pbK;
+    private MulticastSocket socket;
+    private InetAddress group;
+    private Peer peer;
 
     public MainProcess () {
         createSocket();
-        createKeys();
-        setName();
-        String notification = "The peer: " + getName() + " has joined.";
-        sendMessage(notification);
+        createPeer();
     }
 
     private void createSocket () {
         // ips for multicasting: 224.0.0.0 - 239.255.225.255
         socket = null;
         try {
-            group = InetAddress.getByName("225.0.0.7"); // Lincoln
-            //group = InetAddress.getByName("230.230.230.230"); // Gabriel Eugenio
-            //group = InetAddress.getByName("224.0.1.255"); // Mateus
+            group = InetAddress.getByName("225.0.0.7");
             socket = new MulticastSocket(6789);
             socket.joinGroup(group);
         } catch (IOException e) {
@@ -45,84 +29,28 @@ public class MainProcess implements Runnable {
         }
     }
 
-    private void createKeys() {
-        KeyPairGenerator keyPairGenerator;
-        KeyPair pair;
-        try {
-            keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(1024);
-            pair = keyPairGenerator.generateKeyPair();
-            pvK = pair.getPrivate();
-            pbK = pair.getPublic();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            System.out.println("Key failure!");
-            System.exit(1);
-        }
-    }
-
-    public void setName () {
+    private void createPeer() {
+        System.out.println("Insert peer's name:");
         Scanner s = new Scanner(System.in);
-        System.out.print("Insert peer's name: ");
-        name = s.nextLine();
-    }
-
-    public String getName () { return name; }
-
-    public void sendMessage(String m) {
-        SendThread sendM = new SendThread(socket, group, m);
-        sendM.start();
+        String name = s.nextLine();
+        peer = new Peer(name, socket, group);
     }
 
     @Override
     public void run() {
-        sendPubKeys();
         receiveAll();
         sendRequestMessage();
     }
 
-    public void sendPubKeys () {
-        String publicKey = pbK.toString();
-        sendMessage(publicKey);
-    }
-
     public void receiveAll () {
-        ReceiveThread receiveMessage = new ReceiveThread(socket, this);
+        ReceiveThread receiveMessage = new ReceiveThread(socket, peer);
         receiveMessage.start();
     }
 
     public void sendRequestMessage () {
-        Scanner scan = new Scanner(System.in);
-        String arg, notification;
-        while (true) {
-            arg = scan.nextLine();
-            if (arg.equals("quit") || arg.equals("exit")) {
-                notification = "The peer: " + getName() + " has left.";
-                sendMessage(notification);
-                try {
-                    TimeUnit.MILLISECONDS.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                leaveSocket();
-                break;
-            }
-            else {
-                sendMessage(arg);
-            }
-        }
-    }
-
-    public void leaveSocket () {
-        try {
-            socket.leaveGroup(group);
-        } catch (SocketException e) {
-            System.out.println("Socket is" + e.getMessage() + " at MainProcess");
-        } catch(IOException e){
-            Logger.getLogger(SendThread.class.getName()).log(Level.SEVERE, null, e);
-        } finally {
-            if (socket != null) socket.close();
-        }
+        String message = "";
+        MessageControlClass mcc = new MessageControlClass(message, peer);
+        mcc.executeRequireCommands();
     }
 }
 
