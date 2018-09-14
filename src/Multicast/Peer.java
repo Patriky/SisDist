@@ -4,16 +4,25 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.security.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Peer {
     private String name;
     private MulticastSocket socket;
     private InetAddress group;
+
     private PrivateKey pvK;
     private PublicKey pbK;
-    private List<PublicKey> peerPbKList;
-    private String gap = " --- ";
+    private Signature rsaSigner;
+    private List<PublicKey> peerPbKList; // Lista de pares conhecidos (conectados ao grupo)
+    private String gap = " --- "; // Espaçamento para identificar os dados no envio das mensagens
+
+    private List<String> resource; // Lista de recursos do par
+    private HashMap<String, ResourceClass> resourceHash; // Hash de recursos conhecidos de outros pares conhecidos
+
+    private List<PublicKey> answeredPeers; // Lista de pares que responderam o último recurso
+    private int answer; // Número de pares que responderam
 
     public Peer (String n, MulticastSocket s, InetAddress g) {
         name = n;
@@ -22,7 +31,8 @@ public class Peer {
         String notification = "The peer: " + name + " has joined.";
         sendMessage(notification);
         createKeys();
-        sendPubKeys();
+        createKeyList();
+        addPbKToList(pbK);
     }
 
     public void sendMessage(String m) {
@@ -31,20 +41,26 @@ public class Peer {
     }
 
     private void createKeys() {
-        KeyPairGenerator keyPairGenerator;
-        KeyPair pair;
+        KeyPairGenerator keyPairGenerator = null;
+        SecureRandom rand = null;
         try {
             keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(512);
-            pair = keyPairGenerator.generateKeyPair();
-            pvK = pair.getPrivate();
-            pbK = pair.getPublic();
+            rand = SecureRandom.getInstance("SHA1PRNG");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             System.out.println("Key failure!");
             System.exit(1);
         }
-        createKeyList();
+        keyPairGenerator.initialize(1024, rand);
+        KeyPair pair = keyPairGenerator.generateKeyPair();
+        pvK = pair.getPrivate();
+        pbK = pair.getPublic();
+        try {
+            rsaSigner = Signature.getInstance("SHA1withRSA");
+            rsaSigner.initSign(pvK);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            System.out.println("Exception: " + e.getMessage() + " by signing keys.");
+        }
     }
 
     private void createKeyList () {
@@ -52,9 +68,9 @@ public class Peer {
     }
 
     public void sendPubKeys () {
-        KeySignatureClass ksc = new KeySignatureClass();
+        KeyHandlerClass ksc = new KeyHandlerClass();
         String publicKey = ksc.decodeKeyToString(pbK);
-        sendMessage("PUBLIC KEY:" + publicKey);
+        sendMessage("Sending public key" + gap + publicKey);
     }
 
     public void addPbKToList (PublicKey key) {
@@ -65,7 +81,6 @@ public class Peer {
     public boolean containsPbK (PublicKey key) {
         return peerPbKList.contains(key);
     }
-
     public void removeKeyFromList (PublicKey key) {
         peerPbKList.remove(key);
     }
@@ -74,7 +89,7 @@ public class Peer {
         System.out.println("Listing all the public keys: ");
         int count = 0;
         String keyMsg;
-        KeySignatureClass ksc = new KeySignatureClass();
+        KeyHandlerClass ksc = new KeyHandlerClass();
         for (PublicKey key : peerPbKList) {
             keyMsg = ksc.decodeKeyToString(key);
             count++;
@@ -83,14 +98,8 @@ public class Peer {
     }
 
     public PublicKey getPublicKey () { return pbK; }
-
     public String getName() { return name; }
-
     public String getGap () { return gap; }
-
     public MulticastSocket getSocket() { return socket; }
-
     public InetAddress getGroup() { return group; }
-
-    //public List<PublicKey> getPeerPbKList () { return peerPbKList; }
 }

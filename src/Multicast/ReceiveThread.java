@@ -17,7 +17,7 @@ public class ReceiveThread extends Thread {
     public void run (){
         try {
             while (true) {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[10240];
                 DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
                 socket.receive(messageIn);
                 String message = new String(messageIn.getData()).trim();

@@ -6,7 +6,7 @@ import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-public class KeySignatureClass {
+public class KeyHandlerClass {
 
     public PublicKey encodeStringToKey (String keyString) {
         PublicKey publicKey = null;
@@ -27,5 +27,4 @@ public class KeySignatureClass {
         pbKString = Base64.getEncoder().encodeToString(bHandler);
         return pbKString;
     }
-
 }
