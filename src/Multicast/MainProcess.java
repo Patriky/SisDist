@@ -30,9 +30,13 @@ public class MainProcess implements Runnable {
     }
 
     private void createPeer() {
-        System.out.println("Insert peer's name:");
+        System.out.println("Select peer's name (a, b or c?):");
         Scanner s = new Scanner(System.in);
         String name = s.nextLine();
+        while (!name.equals("a") && !name.equals("b") && !name.equals("c")){
+            System.out.println("Invalid name, try again (a, b or c?):");
+            name = s.nextLine();
+        }
         peer = new Peer(name, socket, group);
     }
 
@@ -53,5 +57,3 @@ public class MainProcess implements Runnable {
         mcc.executeRequireCommands();
     }
 }
-
-

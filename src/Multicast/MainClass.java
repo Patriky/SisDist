@@ -1,5 +1,7 @@
 package Multicast;
-
+/**
+ * @author Lincoln
+ */
 public class MainClass {
     public static void main(String args[]) {
         displayEntryMenu();
@@ -9,6 +11,6 @@ public class MainClass {
 
     public static void displayEntryMenu () {
         System.out.println("- Type and press ENTER to send messages: ");
-        System.out.println("- Type \"help\" to see the list of available commands\n");
+        System.out.println("- Type \"help\" to list the available commands\n");
     }
 }
