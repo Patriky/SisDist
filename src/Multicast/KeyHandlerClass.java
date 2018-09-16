@@ -9,9 +9,9 @@ import java.util.Base64;
 public class KeyHandlerClass {
 
     public PublicKey encodeStringToKey (String keyString) {
-        PublicKey publicKey = null;
         byte[] bKey = Base64.getDecoder().decode(keyString);
         EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(bKey);
+        PublicKey publicKey = null;
         try {
             KeyFactory kf = KeyFactory.getInstance("RSA");
             publicKey = kf.generatePublic(encodedKeySpec);
@@ -22,9 +22,8 @@ public class KeyHandlerClass {
     }
 
     public String decodeKeyToString (PublicKey key) {
-        String pbKString;
         byte[] bHandler = key.getEncoded();
-        pbKString = Base64.getEncoder().encodeToString(bHandler);
+        String pbKString = Base64.getEncoder().encodeToString(bHandler);
         return pbKString;
     }
 }

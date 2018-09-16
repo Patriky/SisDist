@@ -1,6 +1,6 @@
 package Multicast;
 /**
- * @author Lincoln
+ * @author Lincoln Batista
  */
 public class MainClass {
     public static void main(String args[]) {

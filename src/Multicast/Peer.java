@@ -36,13 +36,13 @@ public class Peer {
         name = n; socket = s; group = g;
 
         createKeys();
+        createResources();
         createKeyList();
         sendMessage("The peer: " + name + " has joined.");
 
-        createResources();
         createAnswerVerification();
 
-        setPeerStatus("WAITING_PEERS");
+        setPeerMode();
     }
 
     public void sendMessage(String m) {
@@ -78,15 +78,20 @@ public class Peer {
         addPbKToList(pbK);
     }
 
-    public void sendPubKeys () {
+    public void sendPubKeysAndResource() {
+        // Envia a chave do par
         KeyHandlerClass ksc = new KeyHandlerClass();
         String publicKey = ksc.decodeKeyToString(pbK);
-        sendMessage("Sending public key" + gap + publicKey);
+        String data = "ENTRY" + gap + publicKey;
+        // Envia o(s) recurso(s) do par
+        String resources = String.join("\n", myResource);
+        data += gap + resources;
+        sendMessage(data);
     }
 
     public void addPbKToList (PublicKey key) {
         peerPbKList.add(key);
-        sendPubKeys();
+        sendPubKeysAndResource();
     }
 
     public boolean containsPbK (PublicKey key) {
@@ -124,8 +129,12 @@ public class Peer {
 
         for (File f : filesInFolder) {
             myResource.add(f.getName());
-            resourceHash.put(f.getName(), new ResourceClass(f.getName(), pbK));
+            addResource(f.getName(), pbK);
         }
+    }
+
+    public void addResource (String resourceName, PublicKey key) {
+        resourceHash.put(resourceName, new ResourceClass(resourceName, key));
     }
 
     public void createAnswerVerification () {
@@ -139,42 +148,68 @@ public class Peer {
     public MulticastSocket getSocket() { return socket; }
     public InetAddress getGroup() { return group; }
 
+    // Seta o status do par automaticamente quando se tem 3 ou mais pares conectados
+    public void setPeerMode () {
+        if (peerPbKList.size() < 2) {
+            setPeerStatus("WAITING_PEERS");
+        } else {
+            setPeerStatus("SHARING_RESOURCES");
+        }
+    }
+
     public void setPeerStatus (String status) {
-        if (status.equals("WAITING_PEERS") || status.equals("SHARING_RESOURCES")){
+        if (status.equals("WAITING_PEERS")) {
             peerStatus = status;
+        } else if (status.equals("SHARING_RESOURCES")) {
+            if (peerPbKList.size() > 2) {
+                peerStatus = status;
+                System.out.println("3 or more peers joined the group!");
+                System.out.println("  -> Now you can share resources!");
+            } else {
+                System.out.println("Can't change Peer Status: Not enough peers connected");
+            }
         } else {
             System.out.println("Set Program Status Error: UNKNOWN STATUS");
-        }
-        if (peerStatus.equals("SHARING_RESOURCES")) {
-            System.out.println("3 or more peers joined the group!");
-            System.out.println("  -> Now you can share resources!");
         }
     }
 
     public String getPeerStatus () { return peerStatus; }
-
     public List<String> getResourceNameFromHash () {
         return new ArrayList<String>(resourceHash.keySet());
     }
-
     public List<String> getMyResource() { return myResource; }
 
     public String getResourceStatusFromHash (String resourceName) {
         return resourceHash.get(resourceName).getResourceStatus();
     }
 
+    public void useResource (String resourceName) {
+        ResourceClass resource = resourceHash.get(resourceName);
+        resource.setResourceStatus("HELD");
+        resourceHash.put(resourceName, resource);
+    }
+    public void wantResource (String resourceName) {
+        ResourceClass resource = resourceHash.get(resourceName);
+        resource.setResourceStatus("WANTED");
+        resourceHash.put(resourceName, resource);
+    }
+    public void releaseResource (String resourceName) {
+        ResourceClass resource = resourceHash.get(resourceName);
+        resource.setResourceStatus("RELEASED");
+        resourceHash.put(resourceName, resource);
+    }
+
     public void removeResource (PublicKey ownerPeer, String[] resource) {
         for (String resourceName : resource) {
             ResourceClass resourceToForget = resourceHash.get(resourceName);
 
-            // TODO: arrumar erro do comando abaixo
             resourceToForget.removeOwnerPeer(ownerPeer);
 
             if (resourceToForget.numberOfOwnerPeers() == 0) { // Se nenhum outro par possui o mesmo recurso, retira
                 System.out.println("Resource: " + resourceName + " is now gone");
                 resourceHash.remove(resourceName);
             } else { // Caso contrário, não retira o recurso
-                System.out.println("Peer with resource: " + resourceName + " left, but someone else still has it");
+                System.out.println("Peer with resource: " + resourceName + " has left, but someone else still has it");
                 resourceHash.replace(resourceName, resourceToForget);
             }
         }
