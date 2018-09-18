@@ -36,4 +36,5 @@ public class ResourceClass {
     public void removeOwnerPeer (PublicKey peer) { ownerPeer.remove(peer); }
     public void addPeersToQueue (PublicKey peer) { peerToAccess.add(peer); }
     public PublicKey getPeerFromQueue () { return peerToAccess.poll(); }
+    public int getQueueSize () { return peerToAccess.size(); }
 }

@@ -29,8 +29,8 @@ public class MessageControlClass {
 
             if (msg[0].equals("ENTRY")) {
                 // Recebeu a chave do par a ser adicionado
-                KeyHandlerClass ksc = new KeyHandlerClass();
-                PublicKey pbK = ksc.encodeStringToKey(msg[1]);
+                KeyHandlerClass khc = new KeyHandlerClass();
+                PublicKey pbK = khc.encodeStringToKey(msg[1]);
                 if (!peer.containsPbK(pbK)){
                     peer.addPbKToList(pbK);
                 }
@@ -43,14 +43,64 @@ public class MessageControlClass {
                 }
             } else if (msg[0].contains("LEAVE")){
                 // Recebeu a chave do par a ser retirado
-                KeyHandlerClass ksc = new KeyHandlerClass();
-                PublicKey key = ksc.encodeStringToKey(msg[1]);
+                KeyHandlerClass khc = new KeyHandlerClass();
+                PublicKey key = khc.encodeStringToKey(msg[1]);
                 peer.removeKeyFromList(key);
 
                 // Recebeu o(s) recurso(s) para ser(em) retirado(s)
                 String resource = msg[2];
                 String[] resourceList = resource.split("\n");
                 peer.removeResource(key, resourceList);
+            } else if (msg[0].contains("REQUIRE")) {
+                String resourceName = msg[1];
+                String pbKString = msg[2];
+                KeyHandlerClass khc = new KeyHandlerClass();
+                PublicKey pbK = khc.encodeStringToKey(pbKString);
+                if (peer.getConnectedPeers() == peer.getAnswer()) { // Ninguém esta usando o recurso, pode usar
+                    peer.useResource(resourceName);
+                } else if (peer.getConnectedPeers() < peer.getAnswer()) {
+                    // Se não recebeu resposta positiva de todos os pares conectados, então alguém esta usando/querendo usar
+                    // Seta o status do recurso como WANTED
+                    peer.wantResource(resourceName);
+                    // E adiciona na fila peerToAccess da ResourceClass
+                    peer.getResourceFromHash(resourceName).addPeersToQueue(pbK);
+                }
+            } else if (msg[0].contains("RELEASE")) {
+                String resourceName = msg[1];
+                // TODO: fazer com que os pares na lista possam usar o recurso (TESTAR!)
+                // TODO: assinar as mensagens enviadas!
+                if (peer.getResourceStatusFromHash(resourceName).equals("HELD")) {
+                    peer.releaseResource(resourceName);
+                    // se tiver alguém na fila
+                    if (peer.getResourceFromHash(resourceName).getQueueSize() > 0) {
+                        // se liberou, deixa o proximo da fila usar o recurso
+                        peer.initializeAnswers();
+                        // Pergunta se o proximo pode utilizar o recurso
+                        peer.sendMessage("ANSWER" + peer.getGap() + resourceName);
+                        PublicKey nextPeerKey = peer.getResourceFromHash(resourceName).getPeerFromQueue();
+                        KeyHandlerClass khc = new KeyHandlerClass();
+                        String publicKeyString = khc.decodeKeyToString(nextPeerKey);
+                        // Envia o comando, o nome do recurso e a chave do proximo par
+                        peer.sendMessage("REQUIRE" + peer.getGap() + resourceName + peer.getGap() + publicKeyString);
+                    }
+                } else {
+                    System.out.println("ERROR: Resource is not being used!");
+                }
+            } else if (msg[0].contains("ANSWER")) {
+                String resourceName = msg[1];
+                if (peer.getResourceStatusFromHash(resourceName).equals("RELEASED")) { // se não estiver usando, pode usar
+                    // manda resposta positiva
+                    System.out.println("YES");
+                    // se positivo, incrementa numero de respostas positivas
+                    peer.incrementAnswer();
+                    // adiciona o par que respondeu na lista
+                    peer.addAnsweredPeer(peer.getPublicKey());
+                } else { // Se estiver usando ou querendo usar (esta antes na fila)
+                    // manda resposta negativa
+                    System.out.println("NO");
+                    // adiciona o par que respondeu na lista
+                    peer.addAnsweredPeer(peer.getPublicKey());
+                }
             }
         } else if (!message.equals("")) {
             System.out.println(message);
@@ -58,7 +108,6 @@ public class MessageControlClass {
     }
 
     // Comandos executados ao enviar uma mensagem
-    // TODO: para os comandos require, release e status, enviar mensagem com os dados
     public void executeRequireCommands() {
         Scanner scan = new Scanner(System.in);
         while (true) {
@@ -74,18 +123,31 @@ public class MessageControlClass {
             } else if (message.contains("require")) { //&& peer.getPeerStatus().equals("SHARING_RESOURCES")) {
                 String[] msg = message.split(" ");
                 String resourceName = msg[1];
-                // TODO: mandar mensagens se o par pode, ou não, acessar o recurso
-                if (peer.getResourceStatusFromHash(resourceName).equals("RELEASED")) {
-                    peer.useResource(resourceName);
-                } else {
-                    peer.wantResource(resourceName);
-                }
+
+                // Inicializa contador e registro de respostas
+                peer.initializeAnswers();
+                // Pergunta se pode usar o recurso
+                peer.sendMessage("ANSWER" + peer.getGap() + resourceName);
+
+                // Envia o nome do recurso e o comando
+                String data = "REQUIRE" + peer.getGap() + resourceName;
+
+                // Envia a chave do par que vai usar o recurso
+                KeyHandlerClass khc = new KeyHandlerClass();
+                String publicKey = khc.decodeKeyToString(peer.getPublicKey());
+                data += peer.getGap() + publicKey;
+                peer.sendMessage(data);
             } else if (message.contains("release")) { //&& peer.getPeerStatus().equals("SHARING_RESOURCES")) {
                 String[] msg = message.split(" ");
+                // Envia o nome do recurso e o comando
                 String resourceName = msg[1];
-                if (peer.getResourceStatusFromHash(resourceName).equals("HELD")) {
-                    peer.releaseResource(resourceName);
-                }
+                String data = "RELEASE" + peer.getGap() + resourceName;
+
+                // Envia a chave do par que vai usar o recurso
+                KeyHandlerClass khc = new KeyHandlerClass();
+                String publicKey = khc.decodeKeyToString(peer.getPublicKey());
+                data += peer.getGap() + publicKey;
+                peer.sendMessage(data);
             } else if (message.equals("status")) {
                 List<String> resourceNames = peer.getResourceNameFromHash();
                 System.out.println("Resource Status:");
@@ -100,9 +162,9 @@ public class MessageControlClass {
     }
 
     public void quitAction () {
-        // Envia a chave do par decodificada
-        KeyHandlerClass ksc = new KeyHandlerClass();
-        String pbKString = ksc.decodeKeyToString(peer.getPublicKey());
+        // Envia a chave do par decodificada e o comando
+        KeyHandlerClass khc = new KeyHandlerClass();
+        String pbKString = khc.decodeKeyToString(peer.getPublicKey());
         String data = "LEAVE" + peer.getGap() + pbKString;
 
         // Envia também os recursos desse par

@@ -173,10 +173,12 @@ public class Peer {
         }
     }
 
+    public int getConnectedPeers () { return peerPbKList.size();}
     public String getPeerStatus () { return peerStatus; }
     public List<String> getResourceNameFromHash () {
         return new ArrayList<String>(resourceHash.keySet());
     }
+    public ResourceClass getResourceFromHash (String resourceName) { return resourceHash.get(resourceName); }
     public List<String> getMyResource() { return myResource; }
 
     public String getResourceStatusFromHash (String resourceName) {
@@ -214,4 +216,13 @@ public class Peer {
             }
         }
     }
+
+    public void initializeAnswers () {
+        answer = 0;
+        answeredPeers.clear();
+    }
+    public void addAnsweredPeer (PublicKey key) { answeredPeers.add(key); }
+    public int getAnsweredPeerSize () { return answeredPeers.size(); } // Usado para verificar se algum par caiu
+    public int getAnswer () { return answer; } // Retorna o numero de pares que responderam positivamente
+    public void incrementAnswer () { answer++; }
 }
