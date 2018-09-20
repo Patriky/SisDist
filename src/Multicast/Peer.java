@@ -173,7 +173,7 @@ public class Peer {
         }
     }
 
-    public int getConnectedPeers () { return peerPbKList.size();}
+    public int getConnectedPeersSize() { return peerPbKList.size();}
     public String getPeerStatus () { return peerStatus; }
     public List<String> getResourceNameFromHash () {
         return new ArrayList<String>(resourceHash.keySet());
@@ -225,4 +225,17 @@ public class Peer {
     public int getAnsweredPeerSize () { return answeredPeers.size(); } // Usado para verificar se algum par caiu
     public int getAnswer () { return answer; } // Retorna o numero de pares que responderam positivamente
     public void incrementAnswer () { answer++; }
+
+    public List<PublicKey> findNotAnsweredPeer () {
+        List<PublicKey> notAnsweredPeers = new ArrayList<>();
+        for(PublicKey key : peerPbKList) {
+            boolean answered = answeredPeers.contains(key);
+            if(!answered) {
+                notAnsweredPeers.add(key);
+            }
+        }
+        return notAnsweredPeers;
+    }
+
+
 }
