@@ -26,7 +26,6 @@ public class ReceiveThread extends Thread {
             }
         }  catch (IOException e) {
             System.out.println("IO: " + e.getMessage() + " at ReceiveThread");
-            System.exit(1);
         }
     }
 }

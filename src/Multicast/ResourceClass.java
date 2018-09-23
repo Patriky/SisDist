@@ -20,8 +20,6 @@ public class ResourceClass {
         setResourceStatus("RELEASED");
     }
 
-    public String getResourceName () { return name; }
-
     public void setResourceStatus (String status) {
         if (status.equals("RELEASED") || status.equals("HELD") || status.equals("WANTED")){
             resourceStatus = status;
@@ -36,6 +34,6 @@ public class ResourceClass {
     public void removeOwnerPeer (PublicKey peer) { ownerPeer.remove(peer); }
     public void addPeersToQueue (PublicKey peer) { peerToAccess.add(peer); }
     public PublicKey takePeerOutFromQueue() { return peerToAccess.poll(); }
-    public void removePeerFromQueue() {peerToAccess.remove();}
+    public void removePeerFromQueue() { peerToAccess.remove(); }
     public int getQueueSize () { return peerToAccess.size(); }
 }
