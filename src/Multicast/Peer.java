@@ -28,7 +28,7 @@ public class Peer {
     private HashMap<String, ResourceClass> resourceHash; // Hash de recursos de outros pares conhecidos
 
     private List<PublicKey> answeredPeers; // Lista de pares que responderam o último recurso
-    private int answer; // Número de pares que responderam
+    private int answer; // Número de pares que responderam positivamente (votação)
 
     public Peer (String n, MulticastSocket s, InetAddress g) {
         name = n; socket = s; group = g;

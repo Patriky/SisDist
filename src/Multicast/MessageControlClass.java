@@ -158,6 +158,13 @@ public class MessageControlClass {
                 peer.listingKeys();
             } else if (message.equals("help")) {
                 showHelpMenu();
+            } else if (message.equals("status")) {
+                List<String> resourceNameList = peer.getResourceNameFromHash();
+                System.out.println("Resource Status:");
+                for (String resourceName : resourceNameList) {
+                    System.out.println("Name: " + resourceName + " \t " + "Status: "
+                            + peer.getResourceStatusFromHash(resourceName));
+                }
             } else if (message.equals("require") || message.equals("release")
                     || message.equals("require ") || message.equals("release ")) {
                 System.out.println("ERROR: You must require something!");
@@ -193,13 +200,6 @@ public class MessageControlClass {
                 }
             } else if (peer.getPeerStatus().equals("WAITING_PEERS")) {
                 System.out.println("Still waiting for peers: Can't execute require/release commands");
-            } else if (message.equals("status")) {
-                List<String> resourceNames = peer.getResourceNameFromHash();
-                System.out.println("Resource Status:");
-                for (String resourceName : resourceNames) {
-                    System.out.println("Name: " + resourceName + " \t " + "Status: "
-                            + peer.getResourceStatusFromHash(resourceName));
-                }
             } else { // Envia mensagem qualquer
                 peer.sendMessage(message);
             }
