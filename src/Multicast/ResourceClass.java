@@ -36,4 +36,5 @@ public class ResourceClass {
     public PublicKey takePeerOutFromQueue() { return peerToAccess.poll(); }
     public void removePeerFromQueue() { peerToAccess.remove(); }
     public int getQueueSize () { return peerToAccess.size(); }
+    public boolean isOwner (PublicKey key) { return ownerPeer.contains(key); }
 }

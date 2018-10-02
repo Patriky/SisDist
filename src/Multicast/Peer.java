@@ -180,9 +180,7 @@ public class Peer {
 
     public int getConnectedPeersSize() { return peerPbKList.size();}
     public String getPeerStatus () { return peerStatus; }
-    public List<String> getResourceNameFromHash () {
-        return new ArrayList<>(resourceHash.keySet());
-    }
+    public List<String> getResourceNameFromHash () { return new ArrayList<>(resourceHash.keySet()); }
     public ResourceClass getResourceFromHash (String resourceName) { return resourceHash.get(resourceName); }
     public List<String> getMyResource() { return myResource; }
 
@@ -220,16 +218,16 @@ public class Peer {
 
     public void removeResource (PublicKey ownerPeer, String[] resource) {
         for (String resourceName : resource) {
-            ResourceClass resourceToForget = resourceHash.get(resourceName);
+            ResourceClass resourceRemoved = resourceHash.get(resourceName);
 
-            resourceToForget.removeOwnerPeer(ownerPeer);
+            resourceRemoved.removeOwnerPeer(ownerPeer);
 
-            if (resourceToForget.numberOfOwnerPeers() == 0) { // Se nenhum outro par possui o mesmo recurso, retira
+            if (resourceRemoved.numberOfOwnerPeers() == 0) { // Se nenhum outro par possui o mesmo recurso, retira
                 System.out.println("Resource: " + resourceName + " is now gone");
                 resourceHash.remove(resourceName);
             } else { // Caso contrário, não retira o recurso
                 System.out.println("Peer with resource: " + resourceName + " has left, but someone else still has it");
-                resourceHash.replace(resourceName, resourceToForget);
+                resourceHash.replace(resourceName, resourceRemoved);
             }
         }
     }
@@ -247,8 +245,7 @@ public class Peer {
     public List<PublicKey> findNotAnsweredPeer () {
         List<PublicKey> notAnsweredPeers = new ArrayList<>();
         for(PublicKey key : peerPbKList) {
-            boolean answered = answeredPeers.contains(key);
-            if(!answered) {
+            if(!answeredPeers.contains(key)) {
                 notAnsweredPeers.add(key);
             }
         }

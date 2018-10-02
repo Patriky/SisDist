@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
@@ -12,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// TODO: realizar testes
 public class MessageControlClass {
     private String message;
     private Peer peer;
@@ -86,9 +86,9 @@ public class MessageControlClass {
             } else if (msg[0].equals("NEXT_IN_LINE")) { // O par da fila de acesso ganha recurso sem pedir permissão
                 String resourceName = msg[1];
                 // Pega o proximo par da fila de pares que querem acessar o recurso
-                PublicKey publicKey = peer.getResourceFromHash(resourceName).takePeerOutFromQueue();
+                PublicKey nextPeer = peer.getResourceFromHash(resourceName).takePeerOutFromQueue();
                 // Se o par for o proximo, usa o recurso
-                if (peer.getPublicKey().equals(publicKey)) {
+                if (peer.getPublicKey().equals(nextPeer)) {
                     peer.useResource(resourceName);
                     System.out.println("You are now using the resource: " + resourceName);
                 }
@@ -152,7 +152,7 @@ public class MessageControlClass {
             message = scan.nextLine();
             if (message.equals("quit") || message.equals("exit")) {
                 peer.sendMessage("The peer: " + peer.getName() + " has left.");
-                quitAction(peer.getPublicKey());
+                quitAction();
                 break;
             } else if (message.equals("list")) {
                 peer.listingKeys();
@@ -184,6 +184,7 @@ public class MessageControlClass {
                     if (peer.resourceExists(resourceName)) {
                         if (peer.getResourceStatusFromHash(resourceName).equals("HELD")) {
                             peer.releaseResource(resourceName);
+                            System.out.println("Resource released.");
                             // se alguém estiver na fila
                             if (peer.getResourceFromHash(resourceName).getQueueSize() > 0) { // o proximo da fila usa o recurso
                                 // remove o par da fila, não se pode dar require 2 vezes no mesmo recurso
@@ -206,15 +207,32 @@ public class MessageControlClass {
         }
     }
 
-    public void quitAction (PublicKey peerKey) {
+    public void quitAction () {
         // Envia a chave do par decodificada e o comando
         KeyHandlerClass khc = new KeyHandlerClass();
-        String pbKString = khc.decodeKeyToString(peerKey);
+        String pbKString = khc.decodeKeyToString(peer.getPublicKey());
         String data = "LEAVE" + peer.getGap() + pbKString;
 
         // Envia também os recursos desse par
         String resources = String.join("\n", peer.getMyResource());
         data += peer.getGap() + resources;
+
+        // Já que está saindo, libera todos os recursos que está usando
+        if (peer.getPeerStatus().equals("SHARING_RESOURCES")) {
+            for (String resourceName : peer.getResourceNameFromHash()) {
+                if (peer.getResourceStatusFromHash(resourceName).equals("HELD")) {
+                    peer.releaseResource(resourceName);
+                    if (peer.getResourceFromHash(resourceName).getQueueSize() > 0) {
+                        // remove o par da fila, não se pode dar require 2 vezes no mesmo recurso
+                        peer.getResourceFromHash(resourceName).removePeerFromQueue();
+                        // envia mensagem pra achar o par que vai ser o proximo a usar o recurso
+                        peer.sendMessage("NEXT_IN_LINE" + peer.getGap() + resourceName);
+                        // suspende o tempo para enviar a mensagem
+                        suspendTime(1);
+                    }
+                }
+            }
+        }
 
         // Envia a assinatura do par
         byte[] signature = khc.sign(peer.getSignature(), data);
@@ -251,12 +269,43 @@ public class MessageControlClass {
         }
     }
 
+    public void forceQuit (PublicKey key) {
+        // Envia a chave do par decodificada e o comando
+        KeyHandlerClass khc = new KeyHandlerClass();
+        String pbKString = khc.decodeKeyToString(key);
+        String data = "LEAVE" + peer.getGap() + pbKString;
+
+        List<String> resourceList = new ArrayList<>();
+        for (String resourceName : peer.getResourceNameFromHash()) {
+            // Para cada recurso conhecido, descobrir quais tem a key como ownerPeer
+            if(peer.getResourceFromHash(resourceName).isOwner(key)) {
+                resourceList.add(resourceName);
+            }
+            // Se está saindo, libera todos os recursos que o par com key está usando
+            if(peer.getPeerStatus().equals("SHARING_RESOURCES")
+                    && peer.getResourceFromHash(resourceName).getQueueSize() > 0) {
+                // envia mensagem para o próximo par usar o recurso
+                peer.sendMessage("NEXT_IN_LINE" + peer.getGap() + resourceName);
+                suspendTime(1);
+            }
+        }
+        // Envia os recursos para serem retirados
+        String resources = String.join("\n",resourceList);
+        data += peer.getGap() + resources;
+        // Valida com a assinatura do par que identificou que alguem não respondeu
+        byte[] signature = khc.sign(peer.getSignature(), data);
+        String encript = Base64.getEncoder().encodeToString(signature);
+        data += peer.getGap() + encript;
+        peer.sendMessage(data);
+    }
+
     public void requireAction (String resourceName) {
         // Inicializa contador e registro de respostas
         peer.initializeAnswers();
         // Pergunta se tem permissão para usar o recurso
         peer.sendMessage("PERMISSION" + peer.getGap() + resourceName);
         // TIMEOUT de 2 segundos para o envio das respostas
+        System.out.println("Waiting for answers...");
         suspendTime(2);
         // Se nem todos os pares responderam...
         if (peer.getAnsweredPeerSize() < peer.getConnectedPeersSize()) {
@@ -265,7 +314,8 @@ public class MessageControlClass {
             // Desconecta os pares que não responderam
             for (PublicKey key : notAnswered){
                 System.out.println("The peer has been disconnected!");
-                quitAction(key);
+                // Retira o par com key
+                forceQuit(key);
             }
         } else { // Se todos responderam
             if (peer.getConnectedPeersSize() == peer.getAnswer()) { // Ninguém esta usando/quer o recurso, pode usar
