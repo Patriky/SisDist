@@ -269,7 +269,7 @@ public class MessageControlClass {
         }
     }
 
-    public void forceQuit (PublicKey key) {
+    public void forceQuit (PublicKey key) {//, String resourceRequired) {
         // Envia a chave do par decodificada e o comando
         KeyHandlerClass khc = new KeyHandlerClass();
         String pbKString = khc.decodeKeyToString(key);
@@ -289,6 +289,13 @@ public class MessageControlClass {
                 suspendTime(1);
             }
         }
+        // Libera apenas o recurso solicitado no require
+        /*if(peer.getPeerStatus().equals("SHARING_RESOURCES")
+                && peer.getResourceFromHash(resourceRequired).getQueueSize() > 0) {
+            // envia mensagem para o próximo par usar o recurso
+            peer.sendMessage("NEXT_IN_LINE" + peer.getGap() + resourceRequired);
+            suspendTime(1);
+        }*/
         // Envia os recursos para serem retirados
         String resources = String.join("\n",resourceList);
         data += peer.getGap() + resources;
@@ -315,7 +322,7 @@ public class MessageControlClass {
             for (PublicKey key : notAnswered){
                 System.out.println("The peer has been disconnected!");
                 // Retira o par com key
-                forceQuit(key);
+                forceQuit(key);//, resourceName);
             }
         } else { // Se todos responderam
             if (peer.getConnectedPeersSize() == peer.getAnswer()) { // Ninguém esta usando/quer o recurso, pode usar

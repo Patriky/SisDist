@@ -146,12 +146,12 @@ public class Peer {
         answer = 0;
     }
 
-    public PublicKey getPublicKey () { return pbK; }
-    public Signature getSignature() { return rsaSigner; }
     public String getName() { return name; }
     public String getGap () { return gap; }
     public MulticastSocket getSocket() { return socket; }
     public InetAddress getGroup() { return group; }
+    public PublicKey getPublicKey () { return pbK; }
+    public Signature getSignature() { return rsaSigner; }
 
     // Seta o status do par automaticamente quando se tem 3 ou mais pares conectados
     public void setPeerMode () {

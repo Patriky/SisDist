@@ -1,10 +1,7 @@
 package Multicast;
 
 import java.security.PublicKey;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class ResourceClass {
     private String name;
@@ -28,13 +25,18 @@ public class ResourceClass {
         }
     }
 
-    public String getResourceStatus () { return resourceStatus; }
-    public int numberOfOwnerPeers () { return ownerPeer.size(); }
-    public void addOwnerPeer (PublicKey peer) { ownerPeer.add(peer); }
-    public void removeOwnerPeer (PublicKey peer) { ownerPeer.remove(peer); }
-    public void addPeersToQueue (PublicKey peer) { peerToAccess.add(peer); }
-    public PublicKey takePeerOutFromQueue() { return peerToAccess.poll(); }
-    public void removePeerFromQueue() { peerToAccess.remove(); }
-    public int getQueueSize () { return peerToAccess.size(); }
-    public boolean isOwner (PublicKey key) { return ownerPeer.contains(key); }
+    /** Resource Status **/
+    public String getResourceStatus () { return resourceStatus; } // retorna o status do recurso
+
+    /** Owner Peers **/
+    public int numberOfOwnerPeers () { return ownerPeer.size(); } // retorna o numero de pares donos do recurso
+    public void addOwnerPeer (PublicKey peer) { ownerPeer.add(peer); } // adiciona um par na lista de donos
+    public void removeOwnerPeer (PublicKey peer) { ownerPeer.remove(peer); } // remove um par da lista de donos
+    public boolean isOwner (PublicKey key) { return ownerPeer.contains(key); } // verifica se o par é o dono do recurso
+
+    /** Access Queue **/
+    public void addPeersToQueue (PublicKey peer) { peerToAccess.add(peer); } // adiciona um par na fila de acesso
+    public PublicKey takePeerOutFromQueue() { return peerToAccess.poll(); } // retorna e retira o proximo par da fila de acesso
+    public void removePeerFromQueue() { peerToAccess.remove(); } // remove o proximo par da fila de acesso
+    public int getQueueSize () { return peerToAccess.size(); } // retorna o tamanho da fila de acesso
 }
